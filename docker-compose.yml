@@ -1,0 +1,65 @@
+version: '3'
+
+services:
+  nginx:
+    image: nginx:1.18-alpine
+    volumes:
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d
+    volumes_from:
+      - php
+    ports:
+      - 8001:80
+
+  php:
+    build: ./docker/php
+    links:
+      - neo4j
+      - rabbitmq
+    volumes:
+      - ./docker/php/php.ini:/usr/local/etc/php/conf.d/php.ini
+      - ./:/var/www/project/
+      - ./storage/sqlite:/var/www/project/storage/sqlite
+    env_file:
+      - ./docker/php/.env.local
+
+  consumer:
+    build: ./docker/php
+    links:
+      - neo4j
+      - rabbitmq
+    volumes:
+      - ./docker/php/php.ini:/usr/local/etc/php/conf.d/php.ini
+      - ./:/var/www/project/
+      - ./storage/sqlite:/var/www/project/storage/sqlite
+    command: ./docker/wait-for-it.sh rabbitmq:5672 -t 5 --strict -- php bin/console messenger:consume async --time-limit=3600
+    restart: always
+    env_file:
+      - ./docker/php/.env.local
+
+  neo4j:
+    image: neo4j:4.0
+    volumes:
+      - ./storage/neo4j/data:/data
+      - ./storage/neo4j/logs:/logs
+    environment:
+      NEO4J_AUTH: 'neo4j/test'
+      NEO4J_apoc_export_file_enabled: 'true'
+      NEO4J_apoc_import_file_enabled: 'true'
+      NEO4J_apoc_import_file_use__neo4j__config: 'true'
+      NEO4JLABS_PLUGINS: '["apoc"]'
+    ports:
+      - 7475:7474
+      - 7688:7687
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    volumes:
+      - ./storage/rabbitmq/data:/var/lib/rabbitmq
+      - ./storage/rabbitmq/logs:/var/log/rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: 'rabbitmq'
+      RABBITMQ_DEFAULT_PASS: 'rabbitmq'
+      RABBITMQ_DEFAULT_VHOST: '-'
+    ports:
+      - 5673:5672
+      - 15673:15672
