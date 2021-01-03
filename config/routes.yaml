@@ -1,3 +1,85 @@
-#index:
-#    path: /
-#    controller: App\Controller\DefaultController::index
+graphs_collection:
+    path: /api/graphs
+    methods: GET|POST|OPTIONS
+    controller: App\Controller\DefaultController::process
+    defaults:
+        entity: App\Entity\Graph
+        provides: collection
+
+graphs_item:
+    path: /api/graphs/{id<^.{26}$>}
+    methods: GET|PATCH|DELETE|OPTIONS
+    controller: App\Controller\DefaultController::process
+    defaults:
+        entity: App\Entity\Graph
+        provides: item
+
+graphs_nodes_collection:
+    path: /api/graphs/{graphId<^.{26}$>}/nodes
+    methods: GET|POST|OPTIONS
+    controller: App\Controller\DefaultController::process
+    defaults:
+        entity: App\Entity\Node
+        identifiers:
+            App\Entity\Graph:
+                id: graphId
+        provides: collection
+
+graphs_nodes_item:
+    path: /api/graphs/{graphId<^.{26}$>}/nodes/{id<^.{26}$>}
+    methods: GET|PATCH|DELETE|OPTIONS
+    controller: App\Controller\DefaultController::process
+    defaults:
+        entity: App\Entity\Node
+        identifiers:
+            App\Entity\Graph:
+                id: graphId
+            App\Entity\Node: id
+        provides: item
+
+graphs_edges_collection:
+    path: /api/graphs/{graphId<^.{26}$>}/edges
+    methods: GET|POST|OPTIONS
+    controller: App\Controller\DefaultController::process
+    defaults:
+        entity: App\Entity\Edge
+        identifiers:
+            App\Entity\Graph:
+                id: graphId
+        provides: collection
+
+graphs_edges_item:
+    path: /api/graphs/{graphId<^.{26}$>}/edges/{id<^.{26}$>}
+    methods: GET|PATCH|DELETE|OPTIONS
+    controller: App\Controller\DefaultController::process
+    defaults:
+        entity: App\Entity\Edge
+        identifiers:
+            App\Entity\Graph:
+                id: graphId
+            App\Entity\Edge: id
+        provides: item
+
+graphs_shortest_path_collection:
+    path: /api/graphs/{graphId<^.{26}$>}/shortest-path
+    methods: GET|POST|OPTIONS
+    controller: App\Controller\DefaultController::process
+    defaults:
+        entity: App\Entity\ShortestPath
+        identifiers:
+            App\Entity\Graph:
+                id: graphId
+        provides: collection
+
+graphs_shortest_path_item:
+    path: /api/graphs/{graphId<^.{26}$>}/shortest-path/{id<^.{26}$>}
+    methods: GET|OPTIONS
+    controller: App\Controller\DefaultController::process
+    defaults:
+        entity: App\Entity\ShortestPath
+        identifiers:
+            App\Entity\Graph:
+                id: graphId
+            App\Entity\ShortestPath: id
+        provides: item
+

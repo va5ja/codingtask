@@ -4,6 +4,8 @@
 # Put parameters here that don't need to change on each machine where the app is deployed
 # https://symfony.com/doc/current/best_practices/configuration.html#application-related-configuration
 parameters:
+    app.version: '%env(APP_VERSION)%'
+    app.cors_origin: '/^.*$/i'
 
 services:
     # default configuration for services in *this* file
@@ -29,3 +31,63 @@ services:
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
+
+    _instanceof:
+        App\Request\Action\RequestActionInterface:
+            tags: [ 'app.request_action_strategy' ]
+            lazy: true
+        App\EntityManager\EntityManagerInterface:
+            tags: [ 'app.entity_manager' ]
+            lazy: true
+        App\Repository\RepositoryInterface:
+            tags: [ 'app.entity_repository' ]
+            lazy: true
+        App\DataProvider\DataProviderInterface:
+            tags: [ 'app.data_provider_strategy' ]
+            lazy: true
+        App\DataPersister\DataPersisterInterface:
+            tags: [ 'app.data_persister_strategy' ]
+            lazy: true
+
+    App\Repository\DoctrineRepository:
+        autowire: false
+
+    App\Request\Action\RequestActionProcessor:
+        arguments:
+            $requestActions: !tagged_iterator { tag: 'app.request_action_strategy' }
+
+    App\EntityManager\EntityManagerProvider:
+        arguments:
+            $entityManagers: !tagged_iterator { tag: 'app.entity_manager' }
+
+    App\EntityManager\AbstractEntityManager:
+        abstract: true
+        arguments:
+            $locator: !tagged_locator { tag: 'app.entity_repository' }
+
+    App\EntityManager\Neo4jEntityManager:
+        parent: App\EntityManager\AbstractEntityManager
+
+    App\DataProvider\DataProvider:
+        arguments:
+            $providers: !tagged_iterator { tag: 'app.data_provider_strategy', default_priority_method: 'getDefaultPriority' }
+
+    App\DataPersister\DataPersister:
+        arguments:
+            $persisters: !tagged_iterator { tag: 'app.data_persister_strategy', default_priority_method: 'getDefaultPriority' }
+
+    App\Service\RouteCollectionService:
+        arguments:
+            $cacheDir: '%kernel.cache_dir%'
+
+    App\Service\UuidCollectionService:
+        arguments:
+            $cacheDir: '%kernel.cache_dir%'
+
+    Laudis\Neo4j\Client:
+        class: Laudis\Neo4j\ClientBuilder
+        calls:
+            - addHttpConnection: ['backup', '%env(NEO4J_HTTP_DSN)%']
+            - addBoltConnection: ['default', '%env(NEO4J_BOLT_DSN)%']
+            - setDefaultConnection: ['default']
+            - build: !returns_clone []

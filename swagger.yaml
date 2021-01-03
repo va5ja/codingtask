@@ -1,0 +1,575 @@
+openapi: 3.0.0
+
+info:
+  title: Coding Task
+  description: An API that deals with nodes/edges of a graph and retrieves shortest paths
+  version: '1.0'
+
+servers:
+  - url: http://localhost:8001
+    description: Docker server
+
+tags:
+  - name: graphs
+    description: Graph related endpoints.
+  - name: nodes
+    description: Nodes related endpoints.
+  - name: edges
+    description: Edges related endpoints.
+  - name: shortest-path
+    description: Shortes path related endpoints.
+
+paths:
+  /api/graphs:
+    get:
+      security:
+        - tokenAuth: []
+      summary: Get all graphs
+      tags:
+        - graphs
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GraphsCollection'
+    post:
+      security:
+        - tokenAuth: []
+      summary: Post a new graph
+      tags:
+        - graphs
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/GraphsItem'
+                - $ref: '#/components/schemas/GraphsCollection'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/GraphsItem'
+                  - $ref: '#/components/schemas/GraphsCollection'
+
+  /api/graphs/{id}:
+    get:
+      security:
+        - tokenAuth: []
+      summary: Get a specific graph
+      tags:
+        - graphs
+      parameters:
+        - name: id
+          in: path
+          description: Graph ID
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GraphsItem'
+    patch:
+      security:
+        - tokenAuth: []
+      summary: Update a specific graph
+      tags:
+        - graphs
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GraphsItem'
+      parameters:
+        - name: id
+          in: path
+          description: Graph ID
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GraphsItem'
+    delete:
+      security:
+        - tokenAuth: []
+      summary: Delete a specific graph
+      tags:
+        - graphs
+      parameters:
+        - name: id
+          in: path
+          description: Graph ID
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GraphsItem'
+
+  /api/graphs/{graphId}/nodes:
+    get:
+      security:
+        - tokenAuth: []
+      summary: Get all nodes of a graph
+      tags:
+        - nodes
+      parameters:
+        - name: graphId
+          in: path
+          description: Graph ID
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NodesCollection'
+    post:
+      security:
+        - tokenAuth: []
+      summary: Post a new node of a graph
+      tags:
+        - nodes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/NodesItem'
+                - $ref: '#/components/schemas/NodesCollection'
+      parameters:
+        - name: graphId
+          in: path
+          description: Graph ID
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/NodesItem'
+                  - $ref: '#/components/schemas/NodesCollection'
+
+  /api/graphs/{graphId}/nodes/{id}:
+    get:
+      security:
+        - tokenAuth: []
+      summary: Get a specific node of a graph
+      tags:
+        - nodes
+      parameters:
+        - name: graphId
+          in: path
+          description: Graph ID
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          description: Node ID
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NodesItem'
+    patch:
+      security:
+        - tokenAuth: []
+      summary: Update a specific node of a graph
+      tags:
+        - nodes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NodesItem'
+      parameters:
+        - name: graphId
+          in: path
+          description: Graph ID
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          description: Node ID
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NodesItem'
+    delete:
+      security:
+        - tokenAuth: []
+      summary: Delete a specific node of a graph
+      tags:
+        - nodes
+      parameters:
+        - name: graphId
+          in: path
+          description: Graph ID
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          description: Node ID
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NodesItem'
+
+  /api/graphs/{graphId}/edges:
+    get:
+      security:
+        - tokenAuth: []
+      summary: Get all edges of a graph
+      tags:
+        - edges
+      parameters:
+        - name: graphId
+          in: path
+          description: Graph ID
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EdgesCollection'
+    post:
+      security:
+        - tokenAuth: []
+      summary: Post a new edge of a graph
+      tags:
+        - edges
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/EdgesItem'
+                - $ref: '#/components/schemas/EdgesCollection'
+      parameters:
+        - name: graphId
+          in: path
+          description: Graph ID
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/EdgesItem'
+                  - $ref: '#/components/schemas/EdgesCollection'
+
+  /api/graphs/{graphId}/edges/{id}:
+    get:
+      security:
+        - tokenAuth: []
+      summary: Get a specific edge of a graph
+      tags:
+        - edges
+      parameters:
+        - name: graphId
+          in: path
+          description: Graph ID
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          description: Edge ID
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EdgesItem'
+    patch:
+      security:
+        - tokenAuth: []
+      summary: Update a specific edge of a graph
+      tags:
+        - edges
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EdgesItem'
+      parameters:
+        - name: graphId
+          in: path
+          description: Graph ID
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          description: Edge ID
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EdgesItem'
+    delete:
+      security:
+        - tokenAuth: []
+      summary: Delete a specific edge of a graph
+      tags:
+        - edges
+      parameters:
+        - name: graphId
+          in: path
+          description: Graph ID
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          description: Edge ID
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EdgesItem'
+
+  /api/graphs/{graphId}/shortest-path:
+    get:
+      security:
+        - tokenAuth: []
+      summary: Get all shortest paths of a graph
+      tags:
+        - shortest-path
+      parameters:
+        - name: graphId
+          in: path
+          description: Graph ID
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShortestPathCollection'
+    post:
+      security:
+        - tokenAuth: []
+      summary: Post a new shortest path of a graph
+      tags:
+        - shortest-path
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/ShortestPathItem'
+                - $ref: '#/components/schemas/ShortestPathCollection'
+      parameters:
+        - name: graphId
+          in: path
+          description: Graph ID
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ShortestPathItem'
+                  - $ref: '#/components/schemas/ShortestPathCollection'
+
+  /api/graphs/{graphId}/shortest-path/{id}:
+    get:
+      security:
+        - tokenAuth: []
+      summary: Get a specific shortest path of a graph
+      tags:
+        - shortest-path
+      parameters:
+        - name: graphId
+          in: path
+          description: Graph ID
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          description: Shortest path ID
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShortestPathCollection'
+
+components:
+  securitySchemes:
+    tokenAuth:
+      type: apiKey
+      in: header
+      name: X-AUTH-TOKEN
+
+  schemas:
+    GraphsCollection:
+      type: array
+      items:
+        $ref: '#/components/schemas/GraphsItem'
+
+    GraphsItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+
+    NodesCollection:
+      type: array
+      items:
+        $ref: '#/components/schemas/NodesItem'
+
+    NodesItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+
+    EdgesCollection:
+      type: array
+      items:
+        $ref: '#/components/schemas/EdgesItem'
+
+    EdgesItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        fromNode:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            name:
+              type: string
+        toNode:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            name:
+              type: string
+
+    ShortestPathCollection:
+      type: array
+      items:
+        $ref: '#/components/schemas/ShortestPathItem'
+
+    ShortestPathItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        fromNode:
+          type: string
+          format: uuid
+        toNode:
+          type: string
+          format: uuid
+        status:
+          type: string
+        dataFile:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
