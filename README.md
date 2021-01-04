@@ -2,15 +2,16 @@
 
 Installation
 ------------
-Clone the repository:
+Clone the repository and install dependencies with Composer:
 
     $ git clone git@github.com:va5ja/codingtask.git
+    $ composer install
 
 Start docker compose:
 
     $ docker-compose up
 
-Install dependencies with Composer:
+If you don't have Composer installed locally, you can also run:
 
     $ docker-compose exec php composer install
 
