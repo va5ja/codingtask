@@ -95,7 +95,7 @@ class NodeRepository extends Neo4jRepository implements RepositoryInterface
     public function getShortestPath(string $fromNodeId, string $toNodeId): array
     {
         $results = $this->client->run(
-            'MATCH (a:Node {uuid: $fromNodeId}), (b:Node {uuid: $toNodeId}), p = shortestPath((a)-[*]-(b))
+            'MATCH (a:Node {uuid: $fromNodeId}), (b:Node {uuid: $toNodeId}), p = shortestPath((a)-[*]->(b))
             WHERE length(p) > 1
             RETURN p',
             ['fromNodeId' => $fromNodeId, 'toNodeId' => $toNodeId],
