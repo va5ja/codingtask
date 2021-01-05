@@ -11,7 +11,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Security\Core\Security;
 
-class AbstractDoctrineProviderTest extends TestCase
+class AbstractRepositoryProviderTest extends TestCase
 {
     /** @var EntityManagerProvider|\PHPUnit\Framework\MockObject\MockObject */
     private $entityManagerProvider;

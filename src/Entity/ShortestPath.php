@@ -2,7 +2,7 @@
 
 namespace App\Entity;
 
-use App\Annotation\Uuid;
+use App\Annotation\Id;
 use App\Exception\InvalidArgumentException;
 use App\Repository\ShortestPathRepository;
 use Doctrine\ORM\Mapping as ORM;
@@ -26,7 +26,7 @@ class ShortestPath
      * @ORM\Column(type="uuid", unique=true)
      * @ORM\GeneratedValue(strategy="CUSTOM")
      * @ORM\CustomIdGenerator(class=UuidV4Generator::class)
-     * @Uuid(version=4, encode="base32")
+     * @Id(type="uuid", version=4, encode="base32")
      */
     private $id;
 

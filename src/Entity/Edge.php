@@ -2,19 +2,16 @@
 
 namespace App\Entity;
 
-use App\Annotation\Uuid;
+use App\Annotation\Id;
 use Symfony\Component\Uid\AbstractUid;
 
-class Edge
+class Edge extends AbstractObservableEntity
 {
     /**
-     * @Uuid(version=4, encode="base32")
+     * @Id(type="uuid", version=4, encode="base32")
      */
     private $id;
 
-    /**
-     * @Uuid(version=4, encode="base32")
-     */
     private $graphId;
 
     private $fromNode;
@@ -30,6 +27,8 @@ class Edge
     {
         $this->id = $id;
 
+        $this->notify(self::EVENT_PROPERTY_CHANGE, ['property' => 'id']);
+
         return $this;
     }
 
@@ -41,6 +40,8 @@ class Edge
     public function setGraphId(AbstractUid $graphId): self
     {
         $this->graphId = $graphId;
+
+        $this->notify(self::EVENT_PROPERTY_CHANGE, ['property' => 'graphId']);
 
         return $this;
     }
@@ -54,6 +55,8 @@ class Edge
     {
         $this->fromNode = $fromNode;
 
+        $this->notify(self::EVENT_PROPERTY_CHANGE, ['property' => 'fromNode']);
+
         return $this;
     }
 
@@ -65,6 +68,8 @@ class Edge
     public function setToNode(Node $toNode): self
     {
         $this->toNode = $toNode;
+
+        $this->notify(self::EVENT_PROPERTY_CHANGE, ['property' => 'toNode']);
 
         return $this;
     }

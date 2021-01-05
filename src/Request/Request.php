@@ -3,7 +3,7 @@
 namespace App\Request;
 
 use App\Request\Adapter\RequestAdapterInterface;
-use App\Service\UuidCollectionService;
+use App\Service\UuidService;
 
 class Request
 {
@@ -22,15 +22,15 @@ class Request
     /** @var RequestAdapterInterface */
     private $requestAdapter;
 
-    /** @var UuidCollectionService */
-    private $uuidCollectionService;
+    /** @var UuidService */
+    private $uuidService;
 
     public function __construct(
         RequestAdapterInterface $requestAdapter,
-        UuidCollectionService $uuidCollectionService
+        UuidService $uuidService
     ) {
         $this->requestAdapter = $requestAdapter;
-        $this->uuidCollectionService = $uuidCollectionService;
+        $this->uuidService = $uuidService;
     }
 
     public function getUri(): string
@@ -110,7 +110,7 @@ class Request
 
         foreach ($entityIdentifiers as $entityClass => $identifiers) {
             $identifiers = (array)$identifiers;
-            $entityIdentifiers[$entityClass] = $this->uuidCollectionService->decodeEntityProperties(
+            $entityIdentifiers[$entityClass] = $this->uuidService->decodeEntityProperties(
                 $entityClass,
                 array_key_exists(0, $identifiers) ?
                     array_intersect_key($routeParameters, array_flip($identifiers)) :

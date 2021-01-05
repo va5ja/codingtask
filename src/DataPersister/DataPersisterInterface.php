@@ -7,7 +7,7 @@ use App\Request\Request;
 interface DataPersisterInterface
 {
     /**
-     * Method that checks if the strategy is applicable
+     * Method that checks if the persister is applicable.
      *
      * @param array $data
      * @param Request $request
@@ -16,7 +16,7 @@ interface DataPersisterInterface
     public function isApplicable(array $data, Request $request): bool;
 
     /**
-     * Method that persists the data
+     * Method that persists the data.
      *
      * @param array $data
      * @param Request $request

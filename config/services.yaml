@@ -12,6 +12,8 @@ services:
     _defaults:
         autowire: true      # Automatically injects dependencies in your services.
         autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
+        bind:
+            $cacheDir: '%kernel.cache_dir%'
 
     # makes classes in src/ available to be used as services
     # this creates a service per class whose id is the fully-qualified class name
@@ -42,15 +44,16 @@ services:
         App\Repository\RepositoryInterface:
             tags: [ 'app.entity_repository' ]
             lazy: true
+            autowire: false
         App\DataProvider\DataProviderInterface:
             tags: [ 'app.data_provider_strategy' ]
             lazy: true
         App\DataPersister\DataPersisterInterface:
             tags: [ 'app.data_persister_strategy' ]
             lazy: true
-
-    App\Repository\DoctrineRepository:
-        autowire: false
+        App\EntityManager\Metadata\Extractor\ExtractorInterface:
+            tags: [ 'app.metadata_extractor_strategy' ]
+            lazy: true
 
     App\Request\Action\RequestActionProcessor:
         arguments:
@@ -60,14 +63,6 @@ services:
         arguments:
             $entityManagers: !tagged_iterator { tag: 'app.entity_manager' }
 
-    App\EntityManager\AbstractEntityManager:
-        abstract: true
-        arguments:
-            $locator: !tagged_locator { tag: 'app.entity_repository' }
-
-    App\EntityManager\Neo4jEntityManager:
-        parent: App\EntityManager\AbstractEntityManager
-
     App\DataProvider\DataProvider:
         arguments:
             $providers: !tagged_iterator { tag: 'app.data_provider_strategy', default_priority_method: 'getDefaultPriority' }
@@ -76,13 +71,9 @@ services:
         arguments:
             $persisters: !tagged_iterator { tag: 'app.data_persister_strategy', default_priority_method: 'getDefaultPriority' }
 
-    App\Service\RouteCollectionService:
+    App\EntityManager\Metadata\Extractor\MetadataExtractor:
         arguments:
-            $cacheDir: '%kernel.cache_dir%'
-
-    App\Service\UuidCollectionService:
-        arguments:
-            $cacheDir: '%kernel.cache_dir%'
+            $extractors: !tagged_iterator { tag: 'app.metadata_extractor_strategy' }
 
     Laudis\Neo4j\Client:
         class: Laudis\Neo4j\ClientBuilder

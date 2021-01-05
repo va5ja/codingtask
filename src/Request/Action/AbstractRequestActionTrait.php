@@ -10,7 +10,7 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 trait AbstractRequestActionTrait
 {
     /**
-     * Generates the "Location" or "Link" header depending on the data content
+     * Generates the "Location" or "Link" header depending on the data content.
      *
      * @param array $data
      * @param Request $request
@@ -40,7 +40,7 @@ trait AbstractRequestActionTrait
                 }
             }
 
-            $parameters = $this->uuidCollectionService->encodeEntityProperties($entityClassName, $parameters) +
+            $parameters = $this->uuidService->encodeEntityProperties($entityClassName, $parameters) +
                 $request->getRouteParameters();
 
             try {

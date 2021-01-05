@@ -2,6 +2,8 @@
 
 namespace App\EntityManager;
 
+use App\Repository\RepositoryInterface;
+
 interface EntityManagerInterface
 {
     /**
@@ -76,9 +78,18 @@ interface EntityManagerInterface
      * Gets the repository for a class.
      *
      * @param string $className
-     * @return object
+     * @return RepositoryInterface
      */
-    public function getRepository(string $className): object;
+    public function getRepository(string $className): RepositoryInterface;
+
+    /**
+     * Returns the class metadata.
+     *
+     * @param string $className
+     *
+     * @return mixed
+     */
+    public function getClassMetadata(string $className);
 
     /**
      * Checks if the object is managed.

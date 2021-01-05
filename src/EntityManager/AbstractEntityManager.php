@@ -2,28 +2,44 @@
 
 namespace App\EntityManager;
 
+use App\Entity\AbstractObservableEntity;
+use App\EntityManager\Metadata\Extractor\IdExtractor;
+use App\EntityManager\Metadata\MetadataProvider;
 use App\Exception\InvalidArgumentException;
 use Psr\Log\LoggerInterface;
-use Symfony\Component\DependencyInjection\ServiceLocator;
+use SplSubject;
+use Symfony\Component\PropertyAccess\PropertyAccess;
+use Symfony\Component\PropertyAccess\PropertyAccessorInterface;
 
-abstract class AbstractEntityManager
+abstract class AbstractEntityManager implements \SplObserver
 {
     protected const ACTION_CREATE = 'create';
     protected const ACTION_READ = 'read';
     protected const ACTION_UPDATE = 'update';
     protected const ACTION_DELETE = 'delete';
 
-    protected const REPOSITORY_SUFFIX = 'Repository';
+    protected const CONTEXT_CHANGES = 'changes';
 
-    /** @var ServiceLocator */
-    protected $locator;
+    protected const REPOSITORY_SUFFIX = 'Repository';
 
     /** @var LoggerInterface */
     protected $logger;
 
+    /** @var MetadataProvider */
+    protected $metadataProvider;
+
+    /** @var PropertyAccessorInterface */
+    protected $propertyAccessor;
+
     protected $supportedEntities = [];
 
-    protected $managedObjects = [];
+    protected $managedEntities = [];
+
+    protected $modifiedEntities = [];
+
+    protected $persistedEntities = [];
+
+    protected $identifiedEntities = [];
 
     protected $changesQueue = [
         self::ACTION_CREATE => [],
@@ -32,10 +48,10 @@ abstract class AbstractEntityManager
         self::ACTION_DELETE => []
     ];
 
-    public function __construct(ServiceLocator $locator, LoggerInterface $logger)
+    public function __construct(LoggerInterface $logger, MetadataProvider $metadataProvider)
     {
-        $this->locator = $locator;
         $this->logger = $logger;
+        $this->metadataProvider = $metadataProvider;
     }
 
     /**
@@ -51,19 +67,40 @@ abstract class AbstractEntityManager
      */
     public function find(string $className, $id): ?object
     {
-        $hashedId = spl_object_hash((object)$id);
+        if ($id === '' || $id === null || $id === []) {
+            throw new InvalidArgumentException('No identifiers specified for entity "' . $className . '".');
+        }
 
-        if (
-            array_key_exists($className, $this->managedObjects) &&
-            array_key_exists($hashedId, $this->managedObjects[$className])
-        ) {
-            return $this->managedObjects[$className][$hashedId];
+        if (!is_array($id)) {
+            $classMetadata = $this->getClassMetadata($className);
+            $identifiers = $classMetadata[IdExtractor::KEY_EXTRACTION] ?? [];
+
+            if (!$identifiers || count($identifiers) > 1) {
+                throw new InvalidArgumentException(
+                    'Entity "' . $className . '" has 0 or more than 1 identifier ("' . implode('", "',
+                        array_keys($identifiers)) . '").'
+                );
+            }
+
+            $id = [reset($identifiers) => $id];
+        }
+
+        ksort($id);
+        $idHash = implode(' ', $id);
+
+        if (isset($this->managedEntities[$className][$idHash])) {
+            return $this->managedEntities[$className][$idHash];
         }
 
         $repository = $this->getRepository($className);
 
         if (($object = $repository->find($id)) !== null) {
-            $this->managedObjects[$className][$hashedId] = $object;
+            if ($object instanceof \SplSubject) {
+                $object->attach($this);
+            }
+
+            $this->managedEntities[$className][$idHash] = $object;
+            $this->identifiedEntities[spl_object_hash($object)] = $id;
         }
 
         return $object;
@@ -74,7 +111,16 @@ abstract class AbstractEntityManager
      */
     public function persist(object $object): void
     {
-        $this->changesQueue[$this->isManagedObject($object) || $object->getId() !== null ? self::ACTION_UPDATE : self::ACTION_CREATE][] = $object;
+        $className = get_class($object);
+        $idHash = $this->getObjectIdHash($object);
+
+        if ($this->hasObjectIdHash($object) && !isset($this->managedEntities[$className][$idHash])) {
+            $this->managedEntities[$className][$idHash] = $object;
+        }
+
+        if (!$this->hasObjectIdHash($object)) {
+            $this->persistedEntities[] = $object;
+        }
     }
 
     /**
@@ -82,7 +128,9 @@ abstract class AbstractEntityManager
      */
     public function remove(object $object): void
     {
-        $this->changesQueue[self::ACTION_DELETE][] = $object;
+        if ($this->hasObjectIdHash($object)) {
+            $this->changesQueue[self::ACTION_DELETE][] = $object;
+        }
     }
 
     /**
@@ -91,9 +139,9 @@ abstract class AbstractEntityManager
     public function clear(?string $objectName = null): void
     {
         if ($objectName !== null) {
-            unset($this->managedObjects[$objectName]);
+            unset($this->managedEntities[$objectName]);
         } else {
-            $this->managedObjects = [];
+            $this->managedEntities = [];
         }
     }
 
@@ -102,58 +150,43 @@ abstract class AbstractEntityManager
      */
     public function refresh(object $object): void
     {
-        $objectName = get_class($object);
+        $className = get_class($object);
 
-        if (!$this->isManagedObject($object)) {
+        if (!$this->hasObjectIdHash($object) || !$this->isManagedObject($object)) {
             return;
         }
 
-        unset($this->managedObjects[$objectName][$object->getId()]);
+        $identifiers = $this->getObjectIdentifiers($object);
+        $idHash = $this->getObjectIdHash($object);
 
-        if (($foundObject = $this->find($objectName, $object->getId())) !== null) {
-            $this->managedObjects[$objectName][$object->getId()] = $foundObject;
+        unset($this->managedEntities[$className][$idHash]);
+
+        if (($foundObject = $this->find($className, $identifiers)) !== null) {
+            $this->managedEntities[$className][$idHash] = $foundObject;
+            $this->identifiedEntities[spl_object_hash($foundObject)] = $identifiers;
         }
     }
 
     /**
      * @inheritdoc
      */
-    public function flush($entity = null): void
+    public function flush(): void
     {
-        foreach ($this->changesQueue as $action => $queue) {
-            foreach ($queue as $object) {
-                $objectName = get_class($object);
+        $this->preparePersistedEntities();
 
-                try {
-                    $method = $action . (new \ReflectionClass($objectName))->getShortName();
-                } catch (\ReflectionException $e) {
-                    $this->logger->warning('Reflection exception: ' . $e->getMessage());
-                    continue;
-                }
+        $this->prepareManagedEntities();
 
-                $repository = $this->getRepository($objectName);
+        $this->processChangesQueue();
 
-                $this->throwExceptionIfRepositoryHasNoMethod($repository, $method);
-
-                $repository->$method($object);
-
-                unset($this->managedObjects[$objectName][(string)$object->getId()]);
-            }
-        }
+        $this->resetEntityManager();
     }
 
     /**
      * @inheritdoc
      */
-    public function getRepository(string $className): object
+    public function getClassMetadata(string $className): array
     {
-        $repository = 'App\\Repository\\' . (new \ReflectionClass($className))->getShortName() . self::REPOSITORY_SUFFIX;
-
-        if ($this->locator->has($repository)) {
-            return $this->locator->get($repository);
-        }
-
-        throw new InvalidArgumentException("Repository \"$repository\" for entity \"$className\" does not exist.");
+        return $this->metadataProvider->getClassMetadata($className);
     }
 
     /**
@@ -164,20 +197,130 @@ abstract class AbstractEntityManager
         return $this->isManagedObject($object);
     }
 
-    private function isManagedObject(object $object): bool
+    /**
+     * @inheritdoc
+     */
+    public function update(SplSubject $subject, string $event = null, $data = null): void
     {
-        $objectName = get_class($object);
+        $className = get_class($subject);
+        $idHash = $this->getObjectIdHash($subject);
 
-        return array_key_exists($objectName, $this->managedObjects) &&
-            array_key_exists((string)$object->getId(), $this->managedObjects[$objectName]);
+        if ($event === AbstractObservableEntity::EVENT_PROPERTY_CHANGE) {
+            $changes = $this->modifiedEntities[$className][$idHash] ?? [];
+            $this->modifiedEntities[$className][$idHash] = array_unique(array_merge($changes, [$data['property']]));
+        }
     }
 
-    private function throwExceptionIfRepositoryHasNoMethod(object $repository, string $methodName)
+    protected function isManagedObject(object $object): bool
+    {
+        $className = get_class($object);
+        $idHash = $this->getObjectIdHash($object);
+
+        return isset($this->managedEntities[$className][$idHash]);
+    }
+
+    protected function getObjectIdentifiers(object $object): array
+    {
+        $objectHash = spl_object_hash($object);
+
+        if (!isset($this->identifiedEntities[$objectHash])) {
+            $className = get_class($object);
+            $classMetadata = $this->getClassMetadata($className);
+            $identifiers = $classMetadata[IdExtractor::KEY_EXTRACTION] ?? [];
+
+            $ids = [];
+            foreach (array_keys($identifiers) as $identifier) {
+                $ids[$identifier] = $this->getPropertyAccessor()->getValue($object, $identifier);
+            }
+
+            ksort($ids);
+            $this->identifiedEntities[$objectHash] = $ids;
+        }
+
+        return $this->identifiedEntities[$objectHash];
+    }
+
+    protected function getObjectIdHash(object $object): string
+    {
+        return implode(' ', $this->getObjectIdentifiers($object));
+    }
+
+    protected function hasObjectIdHash(object $object): bool
+    {
+        return $this->getObjectIdHash($object) !== '';
+    }
+
+    protected function preparePersistedEntities(): void
+    {
+        foreach ($this->persistedEntities as $persistedObject) {
+            $this->changesQueue[self::ACTION_CREATE][] = $persistedObject;
+        }
+    }
+
+    protected function prepareManagedEntities(): void
+    {
+        foreach ($this->managedEntities as $className => $managedObjects) {
+            foreach ($managedObjects as $idHash => $managedObject) {
+                if (isset($this->modifiedEntities[$className][$idHash]) && $this->modifiedEntities[$className][$idHash]) {
+                    $this->changesQueue[self::ACTION_UPDATE][] = $managedObject;
+                }
+            }
+        }
+    }
+
+    protected function processChangesQueue(): void
+    {
+        foreach ($this->changesQueue as $action => $queue) {
+            foreach ($queue as $object) {
+                $className = get_class($object);
+                $idHash = $this->getObjectIdHash($object);
+
+                try {
+                    $method = $action . (new \ReflectionClass($className))->getShortName();
+                } catch (\ReflectionException $e) {
+                    $this->logger->warning('Reflection exception: ' . $e->getMessage());
+                    continue;
+                }
+
+                $repository = $this->getRepository($className);
+
+                $this->throwExceptionIfRepositoryHasNoMethod($repository, $method);
+
+                $context = [];
+                if ($action === self::ACTION_UPDATE) {
+                    $context[self::CONTEXT_CHANGES] = $this->modifiedEntities[$className][$idHash];
+                }
+
+                $repository->$method($object, $context);
+            }
+        }
+    }
+
+    protected function resetEntityManager(): void
+    {
+        $this->persistedEntities = [];
+        $this->modifiedEntities = [];
+
+        foreach ($this->changesQueue as $action => $queue) {
+            $this->changesQueue[$action] = [];
+        }
+    }
+
+    protected function throwExceptionIfRepositoryHasNoMethod(object $repository, string $methodName)
     {
         if (!method_exists($repository, $methodName)) {
             throw new \BadMethodCallException(
                 sprintf('Repository "%s" does not implement method "%s".', get_class($repository), $methodName)
             );
         }
+    }
+
+    protected function getPropertyAccessor(): PropertyAccessorInterface
+    {
+        if (null === $this->propertyAccessor) {
+            $this->propertyAccessor = PropertyAccess::createPropertyAccessor();
+        }
+
+        return $this->propertyAccessor;
     }
 }

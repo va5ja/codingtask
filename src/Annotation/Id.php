@@ -6,13 +6,14 @@ use App\Exception\InvalidArgumentException;
 use Doctrine\Common\Annotations\Annotation;
 
 /**
- * Annotation class for @Uuid().
+ * Annotation class for @Id().
  *
  * @Annotation
  * @Target("PROPERTY")
  */
-final class Uuid
+final class Id implements EntityAnnotationInterface
 {
+    public $type;
     public $version;
     public $encode;
 
@@ -21,7 +22,7 @@ final class Uuid
         foreach ($options as $key => $value) {
             if (!property_exists($this, $key)) {
                 throw new InvalidArgumentException(
-                    sprintf('Property "%s" does not exist on the Uuid annotation.', $key)
+                    sprintf('Property "%s" does not exist on the Id annotation.', $key)
                 );
             }
 

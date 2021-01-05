@@ -7,7 +7,7 @@ use App\Request\Request;
 interface RequestActionInterface
 {
     /**
-     * Method that checks if the strategy is applicable
+     * Method that checks if the request action is applicable
      *
      * @param Request $request
      * @return bool

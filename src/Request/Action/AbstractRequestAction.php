@@ -8,7 +8,7 @@ use App\EntityManager\EntityManagerProvider;
 use App\Exception\ApiExceptionTrait;
 use App\Request\Request;
 use App\Service\RouteCollectionService;
-use App\Service\UuidCollectionService;
+use App\Service\UuidService;
 use Symfony\Component\PropertyAccess\Exception\InvalidArgumentException;
 use Symfony\Component\PropertyAccess\PropertyAccess;
 use Symfony\Component\PropertyAccess\PropertyAccessorInterface;
@@ -49,8 +49,8 @@ abstract class AbstractRequestAction implements RequestActionInterface
     /** @var RouteCollectionService */
     protected $routeCollectionService;
 
-    /** @var UuidCollectionService */
-    protected $uuidCollectionService;
+    /** @var UuidService */
+    protected $uuidService;
 
     /** @var UrlGeneratorInterface */
     protected $router;
@@ -63,7 +63,7 @@ abstract class AbstractRequestAction implements RequestActionInterface
         ValidatorInterface $validator,
         EntityManagerProvider $entityManager,
         RouteCollectionService $routeCollectionService,
-        UuidCollectionService $uuidCollectionService,
+        UuidService $uuidService,
         UrlGeneratorInterface $router
     ) {
         $this->dataProvider = $dataProvider;
@@ -73,7 +73,7 @@ abstract class AbstractRequestAction implements RequestActionInterface
         $this->validator = $validator;
         $this->entityManager = $entityManager;
         $this->routeCollectionService = $routeCollectionService;
-        $this->uuidCollectionService = $uuidCollectionService;
+        $this->uuidService = $uuidService;
         $this->router = $router;
     }
 

@@ -3,24 +3,10 @@
 namespace App\Repository;
 
 use App\Entity\Node;
-use App\EntityManager\Neo4jEntityManager;
-use Laudis\Neo4j\Client;
 use Symfony\Component\Uid\UuidV4;
 
 class NodeRepository extends Neo4jRepository implements RepositoryInterface
 {
-    /** @var Neo4jEntityManager */
-    protected $entityManager;
-
-    /** @var Client */
-    protected $client;
-
-    public function __construct(Neo4jEntityManager $entityManager, Client $client)
-    {
-        $this->entityManager = $entityManager;
-        $this->client = $client;
-    }
-
     /**
      * @inheritdoc
      */

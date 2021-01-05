@@ -2,10 +2,25 @@
 
 namespace App\Repository;
 
+use App\EntityManager\Neo4jEntityManager;
+use Laudis\Neo4j\Client;
+
 abstract class Neo4jRepository
 {
     protected const PART_WHERE = 'WHERE';
     protected const PART_SET = 'SET';
+
+    /** @var Neo4jEntityManager */
+    protected $entityManager;
+
+    /** @var Client */
+    protected $client;
+
+    public function __construct(Neo4jEntityManager $entityManager, Client $client)
+    {
+        $this->entityManager = $entityManager;
+        $this->client = $client;
+    }
 
     protected function getQueryPart(string $type, string $prefix, array $criteria): string
     {

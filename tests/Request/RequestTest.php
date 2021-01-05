@@ -4,7 +4,7 @@ namespace App\Tests\Request;
 
 use App\Request\Adapter\RequestAdapterInterface;
 use App\Request\Request;
-use App\Service\UuidCollectionService;
+use App\Service\UuidService;
 use PHPUnit\Framework\TestCase;
 
 class RequestTest extends TestCase
@@ -29,7 +29,7 @@ class RequestTest extends TestCase
         $this->adapter->method('getEntityClassName')->willReturn('App\Entity\Test');
         $this->adapter->method('getDataProviderType')->willReturn(Request::PROVIDER_ITEM);
 
-        $this->uuidCollectionService = $this->createMock(UuidCollectionService::class);
+        $this->uuidCollectionService = $this->createMock(UuidService::class);
         $this->uuidCollectionService->method('decodeEntityProperties')->will($this->returnArgument(1));
 
         $this->request = new Request($this->adapter, $this->uuidCollectionService);

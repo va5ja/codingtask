@@ -7,7 +7,7 @@ use App\Request\Request;
 interface DataProviderInterface
 {
     /**
-     * Method that checks if the strategy is applicable
+     * Method that checks if the provider is applicable
      *
      * @param Request $request
      * @return bool

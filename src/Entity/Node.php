@@ -2,19 +2,16 @@
 
 namespace App\Entity;
 
-use App\Annotation\Uuid;
+use App\Annotation\Id;
 use Symfony\Component\Uid\AbstractUid;
 
-class Node
+class Node extends AbstractObservableEntity
 {
     /**
-     * @Uuid(version=4, encode="base32")
+     * @Id(type="uuid", version=4, encode="base32")
      */
     private $id;
 
-    /**
-     * @Uuid(version=4, encode="base32")
-     */
     private $graphId;
 
     private $name;
@@ -28,6 +25,8 @@ class Node
     {
         $this->id = $id;
 
+        $this->notify(self::EVENT_PROPERTY_CHANGE, ['property' => 'id']);
+
         return $this;
     }
 
@@ -40,6 +39,8 @@ class Node
     {
         $this->graphId = $graphId;
 
+        $this->notify(self::EVENT_PROPERTY_CHANGE, ['property' => 'graphId']);
+
         return $this;
     }
 
@@ -51,6 +52,8 @@ class Node
     public function setName(string $name): self
     {
         $this->name = $name;
+
+        $this->notify(self::EVENT_PROPERTY_CHANGE, ['property' => 'name']);
 
         return $this;
     }

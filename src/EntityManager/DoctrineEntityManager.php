@@ -3,7 +3,9 @@
 namespace App\EntityManager;
 
 use App\Repository\DoctrineRepository;
+use App\Repository\RepositoryInterface;
 use Doctrine\Persistence\ManagerRegistry;
+use Doctrine\Persistence\Mapping\ClassMetadata;
 use Doctrine\Persistence\ObjectManager;
 
 class DoctrineEntityManager implements EntityManagerInterface
@@ -81,9 +83,17 @@ class DoctrineEntityManager implements EntityManagerInterface
     /**
      * @inheritdoc
      */
-    public function getRepository(string $className): object
+    public function getRepository(string $className): RepositoryInterface
     {
         return new DoctrineRepository($this->getManagerForClass($className)->getRepository($className));
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function getClassMetadata(string $className): ClassMetadata
+    {
+        return $this->getManagerForClass($className)->getClassMetadata($className);
     }
 
     /**
